@@ -17,6 +17,8 @@ using System.Text.Json.Serialization;
 using System.IO;
 using System.Reflection;
 
+using System.Net;
+
 namespace Servidor
 {
     public class Startup
@@ -31,23 +33,27 @@ namespace Servidor
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddDbContext<ApplicationDBContext>(options=>
+            services.AddDbContext<ApplicationDBContext>(options =>
             options.UseSqlite(Configuration.GetConnectionString("DefaultConnection")));
-            
+
 
             services.AddControllers();
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "WebServiceAPI", Version = "v1" });
-                
-                    
+
+
                 var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
                 c.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, xmlFilename));
             });
-            services.AddHttpsRedirection(options => options.HttpsPort = 5001);
+            services.AddHttpsRedirection(options =>
+            {
+                options.RedirectStatusCode = (int)HttpStatusCode.TemporaryRedirect;
+                options.HttpsPort = 5001;
+            });
         }
-        
-        
+
+
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
@@ -56,14 +62,16 @@ namespace Servidor
             {
                 app.UseDeveloperExceptionPage();
                 app.UseSwagger();
-                app.UseSwaggerUI(c => {
+                app.UseSwaggerUI(c =>
+                {
                     c.SwaggerEndpoint("/swagger/v1/swagger.json", "WebServiceAPI v1");
                     c.RoutePrefix = string.Empty;
-                    });
-                app.UseHsts();
+                });
+
             }
 
             app.UseHttpsRedirection();
+            
 
 
             app.UseRouting();
